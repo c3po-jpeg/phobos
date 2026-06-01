@@ -48,6 +48,41 @@ pub fn test_sphere_sphere(a: BodyHandle, b: BodyHandle, bodies: &[RigidBody]) ->
     contact
 }
 
+pub fn sphere_sphere_dynamic(
+    a: BodyHandle,
+    b: BodyHandle,
+    bodies: &[RigidBody],
+    dt: f32,
+) -> Contact {
+    let mut contact = Contact::new(a, b);
+
+    contact
+}
+
+pub fn test_ray_sphere(
+    ray_start: Vec3,
+    ray_dir: Vec3,
+    sphere_center: Vec3,
+    sphere_radius: f32,
+) -> (bool, f32, f32) {
+    let m = sphere_center - ray_start;
+    let a = ray_dir.dot(&ray_dir);
+    let b = m.dot(&ray_dir);
+    let c = m.dot(&m) - sphere_radius * sphere_radius;
+    let delta = b * b - a * c;
+    let inv_a = 1.0 / a;
+
+    if delta < 0.0 {
+        return (false, 0.0, 0.0);
+    }
+
+    let sqrt_delta = delta.sqrt();
+    let t1 = (b - sqrt_delta) * inv_a;
+    let t2 = (b + sqrt_delta) * inv_a;
+
+    (true, t1, t2)
+}
+
 // ── Contact resolution ────────────────────────────────────────────────────────
 
 pub fn resolve_contact(contact: &Contact, bodies: &mut Vec<RigidBody>) {
@@ -90,7 +125,7 @@ pub fn resolve_contact(contact: &Contact, bodies: &mut Vec<RigidBody>) {
     let impulse = n * j;
 
     bodies[a].apply_impulse_at_point(-impulse, p_on_a);
-    bodies[b].apply_impulse_at_point( impulse, p_on_b);
+    bodies[b].apply_impulse_at_point(impulse, p_on_b);
 
     // ── Friction impulse ──────────────────────────────────────────────────────
 
@@ -101,9 +136,9 @@ pub fn resolve_contact(contact: &Contact, bodies: &mut Vec<RigidBody>) {
     let vel_b = bodies[b].velocity + bodies[b].angular_velocity.cross(&rb);
     let vab = vel_a - vel_b;
 
-    let vel_normal    = n * n.dot(&vab);
-    let vel_tangent   = vab - vel_normal;
-    let tang_len_sq   = vel_tangent.len_sqrd();
+    let vel_normal = n * n.dot(&vab);
+    let vel_tangent = vab - vel_normal;
+    let tang_len_sq = vel_tangent.len_sqrd();
 
     if tang_len_sq > 1e-10 {
         let tang_dir = vel_tangent.normalize();
@@ -112,10 +147,10 @@ pub fn resolve_contact(contact: &Contact, bodies: &mut Vec<RigidBody>) {
         let ang_fric_b = (inv_inertia_b * rb.cross(&tang_dir)).cross(&rb);
         let inv_inertia_tang = (ang_fric_a + ang_fric_b).dot(&tang_dir);
 
-        let reduced_mass     = 1.0 / (total_inv_mass + inv_inertia_tang);
+        let reduced_mass = 1.0 / (total_inv_mass + inv_inertia_tang);
         let friction_impulse = vel_tangent * (-reduced_mass * friction);
 
-        bodies[a].apply_impulse_at_point( friction_impulse, p_on_a);
+        bodies[a].apply_impulse_at_point(friction_impulse, p_on_a);
         bodies[b].apply_impulse_at_point(-friction_impulse, p_on_b);
     }
 

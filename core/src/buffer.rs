@@ -82,11 +82,6 @@ impl Buffer {
         Self::new_internal(ctx, size, usage)
     }
 
-    /// Allocate a buffer and immediately upload `data`.
-    ///
-    /// - CPU-visible buffers (UNIFORM / STORAGE): mapped and written directly.
-    /// - GPU-only buffers (VERTEX / INDEX): uploaded via a staging buffer +
-    ///   one-shot transfer command.
     pub fn new_with_data<T: Copy>(
         ctx: Arc<DeviceContext>,
         data: &[T],
@@ -101,8 +96,6 @@ impl Buffer {
             buffer.write(data)?;
             Ok(buffer)
         } else {
-            // Actually the cleanest fix: expose an explicit memory location
-            // parameter in new_internal (done below via new_staging).
             let mut staging = Self::new_staging(Arc::clone(&ctx), size)?;
             staging.write(data)?;
 

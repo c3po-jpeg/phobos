@@ -69,7 +69,7 @@ fn main() -> anyhow::Result<()> {
 
     // floor
     scene.add_object(
-        Material::polished(true, 600.0, 0.01),
+        Material::polished(true, 400.0, 0.05),
         Shape::CubeSphere {
             radius: 1000.0,
             subdivisions: 400,

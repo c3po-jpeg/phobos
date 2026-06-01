@@ -6,24 +6,11 @@ use super::device::DeviceContext;
 use crate::shader::ShaderModule;
 use crate::vertex::Vertex;
 
-// ---------------------------------------------------------------------------
-// Push constants — 128 bytes guaranteed by the Vulkan spec.
-// Holds model, view, and projection matrices (3 × 16 floats × 4 bytes = 192).
-// Since that's over 128 bytes we pack MVP as a combined model-view-projection
-// matrix (1 × 16 floats = 64 bytes) plus the model matrix for lighting (64).
-//
-// Layout (std430):
-//   offset 64: mat4 model    (for normal/lighting transforms in the shader)
-//
-// In the vertex shader use:
-//   layout(push_constant) uniform PushConstants {
-//       mat4 model;
-//   } pc;
-// ---------------------------------------------------------------------------
+
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct PushConstants {
-    pub model: [[f32; 4]; 4], // 64 bytes — model matrix for normals/lighting
+    pub model: [[f32; 4]; 4], 
 }
 
 impl PushConstants {
