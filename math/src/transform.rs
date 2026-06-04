@@ -85,9 +85,9 @@ impl Transform {
     }
 
     pub fn to_mat(&self) -> Mat4x4 {
-        let mut x = self.orientation * Vec3::X;
-        let mut y = self.orientation * Vec3::Y;
-        let mut z = self.orientation * Vec3::Z;
+        let mut x = self.orientation.rotate_vector(Vec3::X);
+        let mut y = self.orientation.rotate_vector(Vec3::Y);
+        let mut z = self.orientation.rotate_vector(Vec3::Z);
 
         x = x * self.scaling.x;
         y = y * self.scaling.y;
@@ -115,7 +115,7 @@ impl Transform {
         inv.scaling.z = 1.0 / self.scaling.z;
 
         let inv_trans = -self.translation;
-        inv.translation = inv.orientation * (inv.scaling * inv_trans);
+        inv.translation = inv.orientation.rotate_vector(inv.scaling * inv_trans);
 
         inv
     }
@@ -127,7 +127,7 @@ impl Transform {
 
         out.orientation = self.orientation * rhs.orientation;
         //mhhhh have no idea what this is
-        out.translation = self.orientation * (self.scaling * rhs.translation);
+        out.translation = self.orientation.rotate_vector(self.scaling * rhs.translation);
 
         out.translation = self.translation + out.translation;
 

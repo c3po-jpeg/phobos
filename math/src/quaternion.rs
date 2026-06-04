@@ -160,9 +160,18 @@ impl Quat {
                 [d[0][0], d[0][1], d[0][2], 0.0],
                 [d[1][0], d[1][1], d[1][2], 0.0],
                 [d[2][0], d[2][1], d[2][2], 0.0],
-                [0.0,       0.0,      0.0,       1.0],
+                [0.0,     0.0,     0.0,     1.0],
             ],
         }
+    }
+
+    /// r = (q * v' * q^-1).xyz
+    pub fn rotate_vector(&self, v: Vec3) -> Vec3 {
+        let a = self.axis() * 2.0 * Vec3::dot(&self.axis(), &v);
+        let b = v * (self.s * self.s - Vec3::dot(&self.axis(), &self.axis()));
+        let c = Vec3::cross(&self.axis(), &v) * 2.0 * self.s;
+
+        a + b + c
     }
 }
 
@@ -223,18 +232,6 @@ impl Mul<Quat> for f32 {
             z: self * rhs.z,
             s: self * rhs.s,
         }
-    }
-}
-impl Mul<Vec3> for Quat {
-    type Output = Vec3;
-    /// same as
-    /// r = (q * v' * q^-1).xyz
-    fn mul(self, rhs: Vec3) -> Self::Output {
-        let a = self.axis() * 2.0 * Vec3::dot(&self.axis(), &rhs);
-        let b = rhs * (self.s * self.s - Vec3::dot(&self.axis(), &self.axis()));
-        let c = Vec3::cross(&self.axis(), &rhs) * 2.0 * self.s;
-
-        a + b + c
     }
 }
 

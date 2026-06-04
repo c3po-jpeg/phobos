@@ -59,7 +59,7 @@ impl RigidBody {
 
     /// CoM transformed into world space.
     pub fn center_of_mass_world(&self) -> Vec3 {
-        self.position + self.orientation * self.center_of_mass_body()
+        self.position + self.orientation.rotate_vector(self.center_of_mass_body())
     }
 
     // ── Transform ─────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ impl RigidBody {
         };
 
         self.orientation = (dq * self.orientation).normalize();
-        self.position = cm + dq * cm_to_pos;
+        self.position = cm + dq.rotate_vector(cm_to_pos);
     }
 }
 
