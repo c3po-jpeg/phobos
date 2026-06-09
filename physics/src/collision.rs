@@ -12,6 +12,7 @@ pub struct Contact {
     pub pt_a_world: Vec3,
     pub pt_b_world: Vec3,
     /// Normal pointing from B → A (push-A-away direction)
+    pub toi: f32,
     pub normal: Vec3,
     pub has_collision: bool,
 }
@@ -23,6 +24,7 @@ impl Contact {
             body_b: b,
             pt_a_world: Vec3::ZERO,
             pt_b_world: Vec3::ZERO,
+            toi: 0.0,
             normal: Vec3::ZERO,
             has_collision: false,
         }
@@ -56,6 +58,58 @@ pub fn sphere_sphere_dynamic(
 ) -> Contact {
     let mut contact = Contact::new(a, b);
 
+    let relative_vel = bodies[a].velocity - bodies[b].velocity;
+    let ra = sphere_radius(bodies[a].collider()).unwrap();
+    let rb = sphere_radius(bodies[b].collider()).unwrap();
+
+    let start_pt_a = bodies[a].position;
+    let end_pt_b = bodies[a].position + relative_vel * dt;
+    let ray_dir = end_pt_b - start_pt_a;
+
+    let mut t0 = 0.0;
+    let mut t1 = 0.0;
+    if ray_dir.len_sqrd() < 0.001 * 0.001 {
+        let ab = bodies[b].position - bodies[a].position;
+        let radius = ra + rb + 0.001;
+        if ab.len_sqrd() < radius * radius {
+            contact.normal = ab.normalize();
+            contact.pt_a_world = bodies[a].position + contact.normal * ra;
+            contact.pt_b_world = bodies[b].position - contact.normal * rb;
+            return contact;
+        }
+    } else {
+        if !test_ray_sphere(
+            start_pt_a,
+            ray_dir,
+            bodies[b].position,
+            ra + rb,
+            &mut t0,
+            &mut t1,
+        ) {
+            return contact;
+        }
+    }
+
+    t0 *= dt;
+    t1 *= dt;
+
+    if t1 < 0.0 {
+        return contact;
+    }
+
+    contact.toi = if t0 < 0.0 { 0.0 } else { t0 };
+    if contact.toi > dt {
+        return contact;
+    }
+
+    let new_pos_a = bodies[a].position + bodies[a].velocity * contact.toi;
+    let new_pos_b = bodies[b].position + bodies[b].velocity * contact.toi;
+    let ab = new_pos_b - new_pos_a;
+    contact.normal = ab.normalize();
+    contact.has_collision = true;
+    contact.pt_a_world = new_pos_a + ab * ra;
+    contact.pt_b_world = new_pos_b + ab * rb;
+
     contact
 }
 
@@ -64,7 +118,9 @@ pub fn test_ray_sphere(
     ray_dir: Vec3,
     sphere_center: Vec3,
     sphere_radius: f32,
-) -> (bool, f32, f32) {
+    t1: &mut f32,
+    t2: &mut f32,
+) -> bool {
     let m = sphere_center - ray_start;
     let a = ray_dir.dot(&ray_dir);
     let b = m.dot(&ray_dir);
@@ -73,14 +129,14 @@ pub fn test_ray_sphere(
     let inv_a = 1.0 / a;
 
     if delta < 0.0 {
-        return (false, 0.0, 0.0);
+        return false;
     }
 
     let sqrt_delta = delta.sqrt();
-    let t1 = (b - sqrt_delta) * inv_a;
-    let t2 = (b + sqrt_delta) * inv_a;
+    *t1 = (b - sqrt_delta) * inv_a;
+    *t2 = (b + sqrt_delta) * inv_a;
 
-    (true, t1, t2)
+    true
 }
 
 // ── Contact resolution ────────────────────────────────────────────────────────
